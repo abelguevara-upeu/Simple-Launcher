@@ -22,13 +22,15 @@ public class Main {
         VersionManager manager = new VersionManager(workDir);
 
         try {
-            // 3. Descargar y Cargar la versión 1.20.1
-            String versionId = "1.20.1";
+            // 3. Instalar y Cargar Fabric (Mods)
+            // Primero aseguramos que la versión base (Vanilla) exista
+            manager.downloadVersionIndex("1.20.1");
 
-            // Paso A: Descargar JSON
-            manager.downloadVersionIndex(versionId);
+            // Ahora instalamos Fabric
+            FabricManager fabricMgr = new FabricManager(workDir);
+            String versionId = fabricMgr.installFabric("1.20.1", "0.15.11");
 
-            // Paso B: Cargar en memoria
+            // Paso B: Cargar en memoria (Cargará Fabric + Vanilla combinados)
             Version version = manager.loadVersion(versionId);
 
             // Paso C: Descargar JAR del juego

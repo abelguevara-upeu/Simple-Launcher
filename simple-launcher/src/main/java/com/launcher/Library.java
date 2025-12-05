@@ -4,6 +4,7 @@ import java.util.List;
 
 public class Library {
     public String name;
+    public String url; // For custom Maven repositories (Fabric)
     public Downloads downloads;
     public List<Rule> rules;
 

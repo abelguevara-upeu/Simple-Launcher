@@ -62,15 +62,30 @@ public class GameLauncher {
 
         // Add libraries
         for (Library lib : version.libraries) {
+            File libFile = null;
+
+            // Vanilla (downloads)
             if (lib.downloads != null && lib.downloads.artifact != null) {
-                // TODO: Handle classifiers rules like on LibraryManager
-                File libFile = new File(workDir, "libraries/" + lib.downloads.artifact.path);
+                libFile = new File(workDir, "libraries/" + lib.downloads.artifact.path);
+            }
+            // Fabric (Maven)
+            else if (lib.name != null) {
+                String[] parts = lib.name.split(":");
+                String group = parts[0].replace('.', '/');
+                String artifact = parts[1];
+                String libVersion = parts[2];
+                String path = group + "/" + artifact + "/" + libVersion + "/" + artifact + "-" + libVersion + ".jar";
+                libFile = new File(workDir, "libraries/" + path);
+            }
+
+            if (libFile != null) {
                 cp.append(libFile.getAbsolutePath()).append(separator);
             }
         }
 
         // Add game JAR
-        File clientJar = new File(workDir, "versions/" + version.id + "/" + version.id + ".jar");
+        String jarId = version.inheritsFrom != null ? version.inheritsFrom : version.id;
+        File clientJar = new File(workDir, "versions/" + jarId + "/" + jarId + ".jar");
         cp.append(clientJar.getAbsolutePath());
 
         return cp.toString();
