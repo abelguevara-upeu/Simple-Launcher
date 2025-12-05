@@ -12,3 +12,6 @@ target/
 
 # OS
 .DS_Store
+
+# Minecraft
+minecraft-data
