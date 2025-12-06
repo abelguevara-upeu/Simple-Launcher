@@ -22,15 +22,20 @@ public class Main {
         VersionManager manager = new VersionManager(workDir);
 
         try {
-            // 3. Instalar y Cargar Fabric (Mods)
+            // 3. Instalar y Cargar NeoForge (Mods)
             // Primero aseguramos que la versión base (Vanilla) exista
-            manager.downloadVersionIndex("1.20.1");
+            String gameVersion = "1.21.1"; // Usando 1.21.1 para NeoForge moderno
+            manager.downloadVersionIndex(gameVersion);
 
-            // Ahora instalamos Fabric
-            FabricManager fabricMgr = new FabricManager(workDir);
-            String versionId = fabricMgr.installFabric("1.20.1", "0.15.11");
+            // Ahora instalamos NeoForge
+            // FabricManager fabricMgr = new FabricManager(workDir);
+            // String versionId = fabricMgr.installFabric("1.20.1", "0.15.11");
 
-            // Paso B: Cargar en memoria (Cargará Fabric + Vanilla combinados)
+            NeoForgeManager neoforgeMgr = new NeoForgeManager(workDir);
+            // Version 21.1.200 (Required by Create Mod)
+            String versionId = neoforgeMgr.installNeoForge(gameVersion, "21.1.200");
+
+            // Paso B: Cargar en memoria (Cargará NeoForge + Vanilla combinados)
             Version version = manager.loadVersion(versionId);
 
             // Paso C: Descargar JAR del juego
@@ -40,6 +45,12 @@ public class Main {
             System.out.println("¡ÉXITO! Versión cargada: " + version.id);
             System.out.println("Clase principal: " + version.mainClass);
             System.out.println("Librerías detectadas: " + (version.libraries != null ? version.libraries.size() : 0));
+            // Debug arguments
+            if (version.arguments != null) {
+                System.out.println("JVM Args: " + (version.arguments.jvm != null ? version.arguments.jvm.size() : 0));
+                System.out
+                        .println("Game Args: " + (version.arguments.game != null ? version.arguments.game.size() : 0));
+            }
             System.out.println("--------------------------------------------------");
 
             // 4. Descargar Librerías
@@ -51,7 +62,7 @@ public class Main {
             assetManager.downloadAssets(version);
 
             // 6. Autenticación Offline
-            OfflineAuthenticator.Session session = OfflineAuthenticator.login("SteveDev");
+            OfflineAuthenticator.Session session = OfflineAuthenticator.login("NeoDev");
 
             // 7. LANZAR EL JUEGO
             GameLauncher launcher = new GameLauncher(workDir);

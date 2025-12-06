@@ -60,6 +60,24 @@ public class VersionManager {
             if (child.assetIndex == null)
                 child.assetIndex = parent.assetIndex;
         }
+
+        // Merge modern arguments (game/jvm)
+        if (parent.arguments != null) {
+            if (child.arguments == null) {
+                child.arguments = new Version.Arguments();
+            }
+            if (child.arguments.game == null) {
+                child.arguments.game = parent.arguments.game;
+            } else if (parent.arguments.game != null) {
+                child.arguments.game.addAll(parent.arguments.game);
+            }
+
+            if (child.arguments.jvm == null) {
+                child.arguments.jvm = parent.arguments.jvm;
+            } else if (parent.arguments.jvm != null) {
+                child.arguments.jvm.addAll(parent.arguments.jvm);
+            }
+        }
     }
 
     public void downloadVersionIndex(String versionId) throws IOException {

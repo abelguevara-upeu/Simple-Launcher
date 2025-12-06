@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Map;
+import java.util.HashMap;
+import com.google.gson.internal.LinkedTreeMap;
 import com.launcher.auth.OfflineAuthenticator;
 
 public class GameLauncher {
     private final File workDir;
     private final String osName;
+    private final String osArch;
 
     public GameLauncher(File workDir) {
         this.workDir = workDir;
@@ -20,93 +23,271 @@ public class GameLauncher {
             this.osName = "osx";
         else
             this.osName = "linux";
+
+        this.osArch = System.getProperty("os.arch");
     }
 
     public void launch(Version version, OfflineAuthenticator.Session session) throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
 
         // Java executable
-        command.add(System.getProperty("java.home") + "/bin/java");
+        String javaPath = System.getProperty("java.home") + "/bin/java";
+        command.add(javaPath);
 
-        // Memory arguments (RAM)
-        command.add("-Xmx2G"); // 2GB max
+        // Prepare variables for substitution
+        Map<String, String> variables = new HashMap<>();
+        variables.put("natives_directory", new File(workDir, "natives").getAbsolutePath()); // Simplified
+        variables.put("launcher_name", "SimpleLauncher");
+        variables.put("launcher_version", "1.0");
+        variables.put("auth_player_name", session.username);
+        variables.put("version_name", version.id);
+        variables.put("game_directory", workDir.getAbsolutePath());
+        variables.put("library_directory", new File(workDir, "libraries").getAbsolutePath());
+        variables.put("classpath_separator", System.getProperty("path.separator"));
+        variables.put("assets_root", new File(workDir, "assets").getAbsolutePath());
+        variables.put("resolution_width", "854");
+        variables.put("resolution_height", "480");
+        variables.put("assets_index_name", version.assetIndex != null ? version.assetIndex.id : "legacy");
+        variables.put("auth_uuid", session.uuid);
+        variables.put("auth_access_token", session.accessToken);
+        variables.put("user_type", session.userType);
+        variables.put("version_type", "release");
 
-        // macOS specific argument (Fixes GLFW crash)
-        if (this.osName.equals("osx")) {
-            command.add("-XstartOnFirstThread");
+        // Quick Play & Auth Placeholders (Fixes 'Failed to Quick Play' errors)
+        variables.put("clientid", "0");
+        variables.put("auth_xuid", "0000000000000000");
+        variables.put("quickPlayPath", new File(workDir, "quickPlay").getAbsolutePath());
+        variables.put("quickPlaySingleplayer", "");
+        variables.put("quickPlayMultiplayer", "");
+        variables.put("quickPlayRealms", "");
+
+        variables.put("classpath", buildClasspath(version));
+
+        // Modern Arguments (1.13+)
+        if (version.arguments != null) {
+            // JVM Arguments
+            if (version.arguments.jvm != null) {
+                for (Object arg : version.arguments.jvm) {
+                    processArgument(command, arg, variables);
+                }
+            } else {
+                // Default JVM args if missing in modern version (shouldn't handle usually, but
+                // safe fallback)
+                command.add("-Djava.library.path=" + variables.get("natives_directory"));
+                command.add("-cp");
+                command.add(variables.get("classpath"));
+            }
+
+            // Add Main Class (usually added after JVM args and before Game args)
+            command.add(version.mainClass);
+
+            // Game Arguments
+            if (version.arguments.game != null) {
+                for (Object arg : version.arguments.game) {
+                    processArgument(command, arg, variables);
+                }
+            }
         }
+        // Legacy Arguments (<1.13)
+        else {
+            // Memory arguments (RAM) - Defaulting
+            command.add("-Xmx2G");
 
-        // Classpath (Libraries + Game)
-        command.add("-cp");
-        command.add(buildClasspath(version));
+            // macOS specific argument
+            if (this.osName.equals("osx")) {
+                command.add("-XstartOnFirstThread");
+            }
 
-        // Main class
-        command.add(version.mainClass);
+            command.add("-Djava.library.path=" + variables.get("natives_directory"));
+            command.add("-cp");
+            command.add(variables.get("classpath"));
 
-        // Game arguments (User, Version, Assets, etc)
-        addGameArguments(command, version, session);
+            command.add(version.mainClass);
+
+            // Parse minecraftArguments string
+            if (version.minecraftArguments != null) {
+                String[] args = version.minecraftArguments.split(" ");
+                for (String arg : args) {
+                    command.add(replaceVariables(arg, variables));
+                }
+            }
+        }
 
         // Execute
         System.out.println("Executing command: " + String.join(" ", command));
 
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(workDir);
-        pb.inheritIO(); // Show output game in console
+        pb.inheritIO();
         Process process = pb.start();
         process.waitFor();
     }
 
+    private void processArgument(List<String> command, Object arg, Map<String, String> variables) {
+        if (arg instanceof String) {
+            command.add(replaceVariables((String) arg, variables));
+        } else if (arg instanceof LinkedTreeMap) {
+            // It's a ruled argument
+            // { "rules": [...], "value": ["--foo", "bar"] } or "value": "--foo"
+            LinkedTreeMap<?, ?> map = (LinkedTreeMap<?, ?>) arg;
+
+            if (checkRules(map.get("rules"))) {
+                Object value = map.get("value");
+                if (value instanceof String) {
+                    command.add(replaceVariables((String) value, variables));
+                } else if (value instanceof List) {
+                    for (Object v : (List<?>) value) {
+                        if (v instanceof String) {
+                            command.add(replaceVariables((String) v, variables));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean checkRules(Object rulesObj) {
+        if (rulesObj == null)
+            return true;
+        if (!(rulesObj instanceof List))
+            return true; // Should be a list
+
+        List<?> rules = (List<?>) rulesObj;
+        boolean allow = false;
+
+        for (Object ruleObj : rules) {
+            if (ruleObj instanceof LinkedTreeMap) {
+                LinkedTreeMap<?, ?> rule = (LinkedTreeMap<?, ?>) ruleObj;
+                String action = (String) rule.get("action");
+                boolean matches = true;
+
+                if (rule.containsKey("os")) {
+                    LinkedTreeMap<?, ?> osParams = (LinkedTreeMap<?, ?>) rule.get("os");
+                    if (osParams.containsKey("name")) {
+                        String name = (String) osParams.get("name");
+                        if (!name.equals(this.osName))
+                            matches = false;
+                    }
+                    if (osParams.containsKey("arch")) {
+                        String arch = (String) osParams.get("arch");
+                        if (this.osArch.equals("aarch64") && !arch.equals("arm64"))
+                            matches = false;
+                    }
+                }
+
+                if (rule.containsKey("features")) {
+                    LinkedTreeMap<?, ?> features = (LinkedTreeMap<?, ?>) rule.get("features");
+                    for (Object keyObj : features.keySet()) {
+                        String key = (String) keyObj;
+                        Boolean required = (Boolean) features.get(key); // Requirement (usually true)
+
+                        boolean hasFeature = false; // Default state
+                        if (key.equals("is_demo_user"))
+                            hasFeature = false;
+                        else if (key.equals("has_custom_resolution"))
+                            hasFeature = true;
+
+                        if (hasFeature != required) {
+                            matches = false;
+                        }
+                    }
+                }
+
+                if (matches) {
+                    allow = "allow".equals(action);
+                }
+            }
+        }
+
+        return allow;
+    }
+
+    private String replaceVariables(String arg, Map<String, String> variables) {
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            arg = arg.replace("${" + entry.getKey() + "}", entry.getValue());
+        }
+        return arg;
+    }
+
     private String buildClasspath(Version version) {
         StringBuilder cp = new StringBuilder();
-        String separator = System.getProperty("path.separator"); // ":" for Linux/Mac, ";" for Windows
+        String separator = System.getProperty("path.separator");
+        java.util.Set<String> addedPaths = new java.util.HashSet<>();
+        java.util.Set<String> addedArtifacts = new java.util.HashSet<>();
 
         // Add libraries
-        for (Library lib : version.libraries) {
-            File libFile = null;
+        if (version.libraries != null) {
+            for (Library lib : version.libraries) {
+                // Strict filter for 1.21+ log4j-slf4j-impl conflict
+                // Version ID for NeoForge 1.21 is "neoforge-21.x.x", vanilla is "1.21.x"
+                boolean isModern = version.id.contains("1.21") || version.id.contains("neoforge-21");
 
-            // Vanilla (downloads)
-            if (lib.downloads != null && lib.downloads.artifact != null) {
-                libFile = new File(workDir, "libraries/" + lib.downloads.artifact.path);
-            }
-            // Fabric (Maven)
-            else if (lib.name != null) {
-                String[] parts = lib.name.split(":");
-                String group = parts[0].replace('.', '/');
-                String artifact = parts[1];
-                String libVersion = parts[2];
-                String path = group + "/" + artifact + "/" + libVersion + "/" + artifact + "-" + libVersion + ".jar";
-                libFile = new File(workDir, "libraries/" + path);
-            }
+                if (isModern && lib.name != null && lib.name.contains(":log4j-slf4j-impl:")) {
+                    System.out.println("Skipping conflicting library: " + lib.name + " for version " + version.id);
+                    continue;
+                }
 
-            if (libFile != null) {
-                cp.append(libFile.getAbsolutePath()).append(separator);
+                // Deduplication by Artifact ID (keep first/newest)
+                if (lib.name != null) {
+                    String[] parts = lib.name.split(":");
+                    if (parts.length >= 2) {
+                        String key = parts[0] + ":" + parts[1];
+                        // Important: Include classifier in key (e.g. natives) to avoid filtering
+                        // natives
+                        if (parts.length > 3) {
+                            key += ":" + parts[3];
+                        }
+
+                        if (addedArtifacts.contains(key)) {
+                            // System.out.println("Skipping duplicate library version: " + lib.name);
+                            continue;
+                        }
+                        addedArtifacts.add(key);
+                    }
+                }
+
+                File libFile = null;
+
+                // Vanilla (downloads)
+                if (lib.downloads != null && lib.downloads.artifact != null) {
+                    libFile = new File(workDir, "libraries/" + lib.downloads.artifact.path);
+                }
+                // Fabric/Forge/NeoForge (Maven)
+                else if (lib.name != null) {
+                    String[] parts = lib.name.split(":");
+                    String group = parts[0].replace('.', '/');
+                    String artifact = parts[1];
+                    String libVersion = parts[2];
+                    String path = group + "/" + artifact + "/" + libVersion + "/" + artifact + "-" + libVersion
+                            + ".jar";
+                    libFile = new File(workDir, "libraries/" + path);
+                }
+
+                if (libFile != null) {
+                    String absPath = libFile.getAbsolutePath();
+                    if (addedPaths.add(absPath)) { // Only add if not already present
+                        if (cp.length() > 0)
+                            cp.append(separator);
+                        cp.append(absPath);
+                    }
+                }
             }
         }
 
         // Add game JAR
-        String jarId = version.inheritsFrom != null ? version.inheritsFrom : version.id;
-        File clientJar = new File(workDir, "versions/" + jarId + "/" + jarId + ".jar");
-        cp.append(clientJar.getAbsolutePath());
+        // For NeoForge, the game data is provided by the libraries (client-srg, etc).
+        // Adding the vanilla JAR causes a module conflict (_1._20._4 vs minecraft).
+        if (!version.id.toLowerCase().contains("neoforge")) {
+            String jarId = version.inheritsFrom != null ? version.inheritsFrom : version.id;
+            File clientJar = new File(workDir, "versions/" + jarId + "/" + jarId + ".jar");
+            String clientPath = clientJar.getAbsolutePath();
+            if (addedPaths.add(clientPath)) {
+                if (cp.length() > 0)
+                    cp.append(separator);
+                cp.append(clientPath);
+            }
+        }
 
         return cp.toString();
-    }
-
-    private void addGameArguments(List<String> cmd, Version version, OfflineAuthenticator.Session session) {
-        cmd.add("--username");
-        cmd.add(session.username);
-        cmd.add("--version");
-        cmd.add(version.id);
-        cmd.add("--gameDir");
-        cmd.add(workDir.getAbsolutePath());
-        cmd.add("--assetsDir");
-        cmd.add(new File(workDir, "assets").getAbsolutePath());
-        cmd.add("--assetIndex");
-        cmd.add(version.assetIndex.id);
-        cmd.add("--uuid");
-        cmd.add(session.uuid);
-        cmd.add("--accessToken");
-        cmd.add(session.accessToken);
-        cmd.add("--userType");
-        cmd.add(session.userType);
     }
 }
