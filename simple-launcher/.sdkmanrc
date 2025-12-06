@@ -1,0 +1,2 @@
+# Enable auto-env in SDKMAN config: sdk config -> sdkman_auto_env=true
+java=17.0.10-tem
