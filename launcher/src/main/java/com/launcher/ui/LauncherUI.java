@@ -2,6 +2,7 @@ package com.launcher.ui;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.launcher.AssetManager;
+import com.launcher.FabricManager;
 import com.launcher.GameLauncher;
 import com.launcher.NeoForgeManager;
 import com.launcher.Version;
@@ -26,7 +27,6 @@ public class LauncherUI extends JFrame {
 
     public LauncherUI() {
         // Setup working directory
-        String userHome = System.getProperty("user.home");
         // Maintain existing path logic
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
             workDir = new File(System.getProperty("user.dir"), "minecraft-data");
@@ -65,7 +65,7 @@ public class LauncherUI extends JFrame {
         controlsPanel.add(usernameField);
 
         controlsPanel.add(new JLabel("Version:"));
-        String[] versions = { "NeoForge 1.21.1 (Create Mod)", "Vanilla 1.21.1", "Vanilla 1.20.4" };
+        String[] versions = { "NeoForge 1.21.1 (Create Mod)", "Fabric 1.21.1", "Vanilla 1.21.1", "Vanilla 1.20.4" };
         versionSelector = new JComboBox<>(versions);
         controlsPanel.add(versionSelector);
 
@@ -167,8 +167,8 @@ public class LauncherUI extends JFrame {
         System.out.println("Working directory: " + workDir.getAbsolutePath());
 
         // Authenticate
-        OfflineAuthenticator authenticator = new OfflineAuthenticator();
-        OfflineAuthenticator.Session session = authenticator.login(username);
+
+        OfflineAuthenticator.Session session = OfflineAuthenticator.login(username);
         System.out.println("Logged in as " + session.username);
 
         VersionManager manager = new VersionManager(workDir);
@@ -181,6 +181,10 @@ public class LauncherUI extends JFrame {
             NeoForgeManager neoforgeMgr = new NeoForgeManager(workDir);
             // 21.1.200 for Create Mod
             versionId = neoforgeMgr.installNeoForge("1.21.1", "21.1.200");
+        } else if (selection.contains("Fabric")) {
+            FabricManager fabricMgr = new FabricManager(workDir);
+            // Use stable recent loader for 1.21.1
+            versionId = fabricMgr.installFabric("1.21.1", "0.16.5");
         } else if (selection.contains("1.21.1")) {
             versionId = "1.21.1";
             manager.downloadVersionIndex(versionId);

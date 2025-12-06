@@ -34,6 +34,13 @@ public class VersionManager {
 
             if (version.inheritsFrom != null && !version.inheritsFrom.isEmpty()) {
                 System.out.println("Inheriting from " + versionId + " -> " + version.inheritsFrom);
+
+                File parentFile = new File(versionsDir, version.inheritsFrom + "/" + version.inheritsFrom + ".json");
+                if (!parentFile.exists()) {
+                    System.out.println("Parent version " + version.inheritsFrom + " not found locally. Downloading...");
+                    downloadVersionIndex(version.inheritsFrom);
+                }
+
                 Version parent = loadVersion(version.inheritsFrom);
                 mergeVersions(version, parent);
             }
