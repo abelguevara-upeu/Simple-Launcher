@@ -2,6 +2,9 @@
 target/
 *.log
 
+# Deployment
+dist/
+
 # IDEs
 .idea/
 *.iml
@@ -16,3 +19,4 @@ target/
 # Minecraft
 minecraft-data
 java-runtime/
+installer.jar
