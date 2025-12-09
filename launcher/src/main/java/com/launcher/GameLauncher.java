@@ -277,7 +277,7 @@ public class GameLauncher {
         // Add game JAR
         // For NeoForge, the game data is provided by the libraries (client-srg, etc).
         // Adding the vanilla JAR causes a module conflict (_1._20._4 vs minecraft).
-        if (!version.id.toLowerCase().contains("neoforge")) {
+        if (!version.id.toLowerCase().contains("neoforge") && !version.id.toLowerCase().contains("forge")) {
             String jarId = version.inheritsFrom != null ? version.inheritsFrom : version.id;
             File clientJar = new File(workDir, "versions/" + jarId + "/" + jarId + ".jar");
             String clientPath = clientJar.getAbsolutePath();

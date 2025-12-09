@@ -3,6 +3,7 @@ package com.launcher.ui;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.launcher.AssetManager;
 import com.launcher.FabricManager;
+import com.launcher.ForgeManager;
 import com.launcher.GameLauncher;
 import com.launcher.NeoForgeManager;
 import com.launcher.Version;
@@ -65,7 +66,8 @@ public class LauncherUI extends JFrame {
         controlsPanel.add(usernameField);
 
         controlsPanel.add(new JLabel("Version:"));
-        String[] versions = { "NeoForge 1.21.1 (Create Mod)", "Fabric 1.21.1", "Vanilla 1.21.1", "Vanilla 1.20.4" };
+        String[] versions = { "NeoForge 1.21.1 (Create Mod)", "Forge 1.20.1", "Fabric 1.21.1", "Vanilla 1.21.1",
+                "Vanilla 1.20.4" };
         versionSelector = new JComboBox<>(versions);
         controlsPanel.add(versionSelector);
 
@@ -185,6 +187,9 @@ public class LauncherUI extends JFrame {
             FabricManager fabricMgr = new FabricManager(workDir);
             // Use stable recent loader for 1.21.1
             versionId = fabricMgr.installFabric("1.21.1", "0.16.5");
+        } else if (selection.contains("Forge")) {
+            ForgeManager forgeMgr = new ForgeManager(workDir);
+            versionId = forgeMgr.installForge("1.20.1", "47.2.0");
         } else if (selection.contains("1.21.1")) {
             versionId = "1.21.1";
             manager.downloadVersionIndex(versionId);
@@ -210,7 +215,7 @@ public class LauncherUI extends JFrame {
         }
 
         // Download Client Jar
-        if (!versionId.contains("neoforge")) {
+        if (!versionId.contains("neoforge") && !versionId.contains("forge")) {
             manager.downloadGameJar(version);
         }
 
