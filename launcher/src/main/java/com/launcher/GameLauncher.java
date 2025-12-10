@@ -63,22 +63,29 @@ public class GameLauncher {
 
         variables.put("classpath", buildClasspath(version));
 
+        // Standard JVM Arguments (RAM, OS specifics) - Applied to ALL versions
+        command.add("-Xmx4G"); // Increase to 4GB
+
+        if (this.osName.equals("osx")) {
+            command.add("-XstartOnFirstThread");
+            command.add("-Dfml.earlyprogresswindow=false");
+        }
+
         // Modern Arguments (1.13+)
         if (version.arguments != null) {
-            // JVM Arguments
+            // JVM Arguments from version.json
             if (version.arguments.jvm != null) {
                 for (Object arg : version.arguments.jvm) {
                     processArgument(command, arg, variables);
                 }
             } else {
-                // Default JVM args if missing in modern version (shouldn't handle usually, but
-                // safe fallback)
+                // Default JVM args if missing in modern version
                 command.add("-Djava.library.path=" + variables.get("natives_directory"));
                 command.add("-cp");
                 command.add(variables.get("classpath"));
             }
 
-            // Add Main Class (usually added after JVM args and before Game args)
+            // Add Main Class
             command.add(version.mainClass);
 
             // Game Arguments
@@ -90,14 +97,6 @@ public class GameLauncher {
         }
         // Legacy Arguments (<1.13)
         else {
-            // Memory arguments (RAM) - Defaulting
-            command.add("-Xmx2G");
-
-            // macOS specific argument
-            if (this.osName.equals("osx")) {
-                command.add("-XstartOnFirstThread");
-            }
-
             command.add("-Djava.library.path=" + variables.get("natives_directory"));
             command.add("-cp");
             command.add(variables.get("classpath"));

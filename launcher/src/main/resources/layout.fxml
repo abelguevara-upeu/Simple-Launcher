@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.launcher.fx.MainController">
+   
+   <!-- Sidebar -->
+   <left>
+      <VBox styleClass="sidebar" prefWidth="200" spacing="5">
+         <padding>
+            <Insets top="20" left="0" right="0" bottom="20"/>
+         </padding>
+         
+         <Label text="SIMPLE LAUNCHER" styleClass="header-label">
+            <VBox.margin>
+               <Insets left="20" bottom="30"/>
+            </VBox.margin>
+         </Label>
+         
+         <Button fx:id="btnPlayTab" text="Play" styleClass="sidebar-button" maxWidth="Infinity" onAction="#showPlayTab"/>
+         <Button fx:id="btnModsTab" text="My Mods" styleClass="sidebar-button" maxWidth="Infinity" onAction="#showModsTab"/>
+         <Button fx:id="btnOptionsTab" text="Options" styleClass="sidebar-button" maxWidth="Infinity"/>
+      </VBox>
+   </left>
+
+   <!-- Main Content -->
+   <center>
+      <StackPane styleClass="content-area">
+         
+         <!-- Play View -->
+         <VBox fx:id="viewPlay" spacing="20" alignment="TOP_LEFT">
+            <Label text="Launch Options" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+            
+            <HBox spacing="15" alignment="CENTER_LEFT">
+               <VBox spacing="5">
+                   <Label text="Username"/>
+                   <TextField fx:id="usernameField" promptText="Enter Username" prefWidth="200"/>
+               </VBox>
+               
+               <VBox spacing="5">
+                   <Label text="Mod Loader"/>
+                   <ComboBox fx:id="typeSelector" prefWidth="150" onAction="#onTypeChanged"/>
+               </VBox>
+               
+               <VBox spacing="5">
+                   <Label text="Version"/>
+                   <ComboBox fx:id="versionSelector" prefWidth="150"/>
+               </VBox>
+            </HBox>
+            
+            <Label text="Console Output"/>
+            <TextArea fx:id="consoleArea" editable="false" prefHeight="250" style="-fx-font-family: Monospaced;"/>
+            
+            <VBox spacing="5" alignment="CENTER">
+                <Button fx:id="btnLaunch" text="LAUNCH GAME" styleClass="minecraft-button, big-play-button" prefWidth="300" prefHeight="50" onAction="#onLaunch"/>
+                <ProgressBar fx:id="progressBar" prefWidth="300" progress="0.0" visible="false"/>
+                <Label fx:id="statusLabel" text=""/>
+            </VBox>
+         </VBox>
+         
+         <!-- Mods View (Hidden by default) -->
+         <VBox fx:id="viewMods" spacing="20" visible="false">
+             <HBox alignment="CENTER_LEFT" spacing="20">
+                 <Label text="Active Mods" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+                 <Button text="Open Mods Folder" styleClass="minecraft-button" onAction="#openModsFolder"/>
+             </HBox>
+             
+             <ListView fx:id="modsList" VBox.vgrow="ALWAYS"/>
+             
+             <Label text="Drag and drop JAR files here to add them (Coming Soon)" style="-fx-text-fill: #666;"/>
+         </VBox>
+         
+      </StackPane>
+   </center>
+   
+</BorderPane>

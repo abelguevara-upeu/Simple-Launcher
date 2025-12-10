@@ -1,0 +1,120 @@
+/* Minecraft Style CSS */
+
+.root {
+    -fx-background-color: #1e1e1e;
+    -fx-font-family: "Arial"; /* Fallback, maybe load Minecraft font later */
+}
+
+/* Sidebar */
+.sidebar {
+    -fx-background-color: #2c2c2c;
+    -fx-border-color: #000000;
+    -fx-border-width: 0 2 0 0;
+}
+
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #aaaaaa;
+    -fx-font-size: 16px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10 20;
+    -fx-cursor: hand;
+}
+
+.sidebar-button:hover {
+    -fx-background-color: #3a3a3a;
+    -fx-text-fill: #ffffff;
+}
+
+.sidebar-button:selected {
+    -fx-background-color: #3a4a5a;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #5555ff;
+    -fx-border-width: 0 0 0 3;
+}
+
+/* Main Content Area */
+.content-area {
+    -fx-padding: 20;
+}
+
+/* Minecraft Button */
+.minecraft-button {
+    -fx-background-color: #777777;
+    -fx-background-insets: 0, 2;
+    -fx-background-radius: 0;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-border-color: #000000;
+    -fx-border-width: 2;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.6), 0, 0, 2, 2);
+}
+
+.minecraft-button:hover {
+    -fx-background-color: #888888;
+    -fx-border-color: #eeeeee;
+}
+
+.minecraft-button:pressed {
+    -fx-background-color: #555555;
+    -fx-translate-y: 1;
+}
+
+.big-play-button {
+    -fx-background-color: #2ea043; /* Github Green-ish */
+    -fx-font-size: 20px;
+}
+
+.big-play-button:hover {
+    -fx-background-color: #3fb950;
+}
+
+/* Inputs */
+.text-field {
+    -fx-background-color: #000000;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #555555;
+    -fx-border-width: 2;
+    -fx-padding: 5;
+}
+
+.combo-box {
+    -fx-background-color: #000000;
+    -fx-border-color: #555555;
+    -fx-border-width: 2;
+}
+
+.combo-box .cell {
+    -fx-text-fill: #ffffff;
+}
+
+.list-view {
+    -fx-background-color: #111111;
+    -fx-border-color: #555555;
+    -fx-border-width: 2;
+}
+
+.list-cell {
+    -fx-background-color: #111111;
+    -fx-text-fill: #dddddd;
+    -fx-padding: 5;
+}
+
+.list-cell:filled:selected, .list-cell:filled:selected:hover {
+    -fx-background-color: #333333;
+    -fx-border-color: #888888;
+    -fx-border-style: dotted;
+}
+
+.label {
+    -fx-text-fill: #dddddd;
+}
+
+.header-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 2, 2, 0, 0);
+}

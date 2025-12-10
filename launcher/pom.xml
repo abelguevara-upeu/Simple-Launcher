@@ -22,7 +22,19 @@
       <version>2.10.1</version>
     </dependency>
 
-    <!-- FlatLaf: Modern Look and Feel -->
+    <!-- JavaFX -->
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-controls</artifactId>
+      <version>21.0.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openjfx</groupId>
+      <artifactId>javafx-fxml</artifactId>
+      <version>21.0.5</version>
+    </dependency>
+
+    <!-- FlatLaf: Modern Look and Feel (Keeping for legacy or optional use) -->
     <dependency>
       <groupId>com.formdev</groupId>
       <artifactId>flatlaf</artifactId>
@@ -58,6 +70,14 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.openjfx</groupId>
+        <artifactId>javafx-maven-plugin</artifactId>
+        <version>0.0.8</version>
+        <configuration>
+          <mainClass>com.launcher.Main</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>
