@@ -220,7 +220,7 @@ public class LauncherUI extends JFrame {
         }
 
         System.out.println("Launching game...");
-        launcher.launch(version, session);
+        launcher.launch(version, session, 4096);
         System.out.println("Game process exited.");
     }
 

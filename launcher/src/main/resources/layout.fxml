@@ -30,7 +30,7 @@
          
          <Button fx:id="btnPlayTab" text="Play" styleClass="sidebar-button" maxWidth="Infinity" onAction="#showPlayTab"/>
          <Button fx:id="btnModsTab" text="My Mods" styleClass="sidebar-button" maxWidth="Infinity" onAction="#showModsTab"/>
-         <Button fx:id="btnOptionsTab" text="Options" styleClass="sidebar-button" maxWidth="Infinity"/>
+         <Button fx:id="btnOptionsTab" text="Options" styleClass="sidebar-button" maxWidth="Infinity" onAction="#showOptionsTab"/>
       </VBox>
    </left>
 
@@ -79,6 +79,20 @@
              <ListView fx:id="modsList" VBox.vgrow="ALWAYS"/>
              
              <Label text="Drag and drop JAR files here to add them (Coming Soon)" style="-fx-text-fill: #666;"/>
+         </VBox>
+
+         <!-- Options View (Hidden by default) -->
+         <VBox fx:id="viewOptions" spacing="20" visible="false" alignment="TOP_LEFT">
+             <Label text="Launcher Options" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+             
+             <VBox spacing="10">
+                 <Label text="Java Settings" style="-fx-font-weight: bold;"/>
+                 <HBox spacing="10" alignment="CENTER_LEFT">
+                     <Label text="Maximum RAM (MB):"/>
+                     <ComboBox fx:id="ramSelector" prefWidth="150"/>
+                 </HBox>
+                 <Label text="Ensure you have 64-bit Java installed for >2GB RAM." style="-fx-font-size: 10px; -fx-text-fill: #888;"/>
+             </VBox>
          </VBox>
          
       </StackPane>

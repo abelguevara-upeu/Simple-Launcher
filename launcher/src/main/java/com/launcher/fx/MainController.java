@@ -18,9 +18,9 @@ import java.util.List;
 public class MainController {
 
     @FXML
-    private Button btnPlayTab, btnModsTab, btnLaunch;
+    private Button btnPlayTab, btnModsTab, btnLaunch, btnOptionsTab;
     @FXML
-    private VBox viewPlay, viewMods;
+    private VBox viewPlay, viewMods, viewOptions;
 
     @FXML
     private TextField usernameField;
@@ -28,6 +28,8 @@ public class MainController {
     private ComboBox<String> typeSelector;
     @FXML
     private ComboBox<String> versionSelector;
+    @FXML
+    private ComboBox<String> ramSelector;
     @FXML
     private TextArea consoleArea;
     @FXML
@@ -50,15 +52,43 @@ public class MainController {
         typeSelector.getSelectionModel().select("Forge"); // Default
         onTypeChanged();
 
+        // Init RAM Selector
+        ramSelector.setItems(FXCollections.observableArrayList(
+                "2 GB", "4 GB", "6 GB", "8 GB", "10 GB", "12 GB", "16 GB"));
+        loadOptions();
+        ramSelector.setOnAction(e -> saveOptions());
+
         usernameField.setText("NeoDev");
 
         // Init Tabs
         showPlayTab();
     }
 
+    private void loadOptions() {
+        java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+        int ramMB = prefs.getInt("max_ram_mb", 4096);
+        int gb = ramMB / 1024;
+        ramSelector.getSelectionModel().select(gb + " GB");
+        if (ramSelector.getSelectionModel().getSelectedItem() == null) {
+            ramSelector.getSelectionModel().select("4 GB"); // Fallback
+        }
+    }
+
+    private void saveOptions() {
+        String selected = ramSelector.getValue();
+        if (selected != null) {
+            int gb = Integer.parseInt(selected.split(" ")[0]);
+            int mb = gb * 1024;
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            prefs.putInt("max_ram_mb", mb);
+        }
+    }
+
     private void setupWorkDir() {
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-            workDir = new File(System.getProperty("user.dir"), "minecraft-data");
+            // Use Application Support for macOS to avoid read-only fs issues in packaged
+            // apps
+            workDir = new File(System.getProperty("user.home"), "Library/Application Support/SimpleLauncher");
         } else {
             workDir = new File(System.getenv("APPDATA"), ".simplelauncher");
         }
@@ -70,6 +100,7 @@ public class MainController {
     private void showPlayTab() {
         viewPlay.setVisible(true);
         viewMods.setVisible(false);
+        viewOptions.setVisible(false);
         updateTabStyle(btnPlayTab);
     }
 
@@ -77,16 +108,27 @@ public class MainController {
     private void showModsTab() {
         viewPlay.setVisible(false);
         viewMods.setVisible(true);
+        viewOptions.setVisible(false);
         updateTabStyle(btnModsTab);
         loadModsList();
+    }
+
+    @FXML
+    private void showOptionsTab() {
+        viewPlay.setVisible(false);
+        viewMods.setVisible(false);
+        viewOptions.setVisible(true);
+        updateTabStyle(btnOptionsTab);
     }
 
     // Simple helper to highlight selected tab
     private void updateTabStyle(Button selected) {
         btnPlayTab.getStyleClass().remove("selected");
         btnModsTab.getStyleClass().remove("selected");
+        btnOptionsTab.getStyleClass().remove("selected");
         // Add style if supported by CSS, or just leave as is
         // For now our CSS handles :hover, but we can add a pseudo class if needed.
+        selected.getStyleClass().add("selected");
     }
 
     @FXML
@@ -207,9 +249,13 @@ public class MainController {
             manager.downloadGameJar(version);
         }
 
+        // Get RAM
+        java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+        int ramMB = prefs.getInt("max_ram_mb", 4096);
+
         updateMessage("Launching...");
-        System.out.println("Launching game process...");
-        launcher.launch(version, session);
+        System.out.println("Launching game process with " + ramMB + "MB RAM...");
+        launcher.launch(version, session, ramMB);
     }
 
     private void updateMessage(String msg) {

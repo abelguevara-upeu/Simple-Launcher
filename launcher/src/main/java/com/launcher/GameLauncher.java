@@ -27,7 +27,8 @@ public class GameLauncher {
         this.osArch = System.getProperty("os.arch");
     }
 
-    public void launch(Version version, OfflineAuthenticator.Session session) throws IOException, InterruptedException {
+    public void launch(Version version, OfflineAuthenticator.Session session, int ramMB)
+            throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
 
         // Java executable
@@ -64,7 +65,7 @@ public class GameLauncher {
         variables.put("classpath", buildClasspath(version));
 
         // Standard JVM Arguments (RAM, OS specifics) - Applied to ALL versions
-        command.add("-Xmx4G"); // Increase to 4GB
+        command.add("-Xmx" + ramMB + "M"); // Dynamic RAM
 
         if (this.osName.equals("osx")) {
             command.add("-XstartOnFirstThread");

@@ -1,6 +1,7 @@
 # Maven
 target/
 *.log
+dependency-reduced-pom.xml
 
 # Deployment
 dist/
