@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.HashMap;
 import com.google.gson.internal.LinkedTreeMap;
 import com.launcher.auth.OfflineAuthenticator;
+import com.launcher.model.Version;
+import com.launcher.model.Library;
 
 public class GameLauncher {
     private final File workDir;
@@ -41,14 +43,15 @@ public class GameLauncher {
         variables.put("launcher_name", "SimpleLauncher");
         variables.put("launcher_version", "1.0");
         variables.put("auth_player_name", session.username);
-        variables.put("version_name", version.id);
+        variables.put("version_name", version.getId());
         variables.put("game_directory", workDir.getAbsolutePath());
         variables.put("library_directory", new File(workDir, "libraries").getAbsolutePath());
         variables.put("classpath_separator", System.getProperty("path.separator"));
         variables.put("assets_root", new File(workDir, "assets").getAbsolutePath());
         variables.put("resolution_width", "854");
         variables.put("resolution_height", "480");
-        variables.put("assets_index_name", version.assetIndex != null ? version.assetIndex.id : "legacy");
+        variables.put("assets_index_name",
+                version.getAssetIndex() != null ? version.getAssetIndex().getId() : "legacy");
         variables.put("auth_uuid", session.uuid);
         variables.put("auth_access_token", session.accessToken);
         variables.put("user_type", session.userType);
@@ -73,10 +76,10 @@ public class GameLauncher {
         }
 
         // Modern Arguments (1.13+)
-        if (version.arguments != null) {
+        if (version.getArguments() != null) {
             // JVM Arguments from version.json
-            if (version.arguments.jvm != null) {
-                for (Object arg : version.arguments.jvm) {
+            if (version.getArguments().getJvm() != null) {
+                for (Object arg : version.getArguments().getJvm()) {
                     processArgument(command, arg, variables);
                 }
             } else {
@@ -87,11 +90,11 @@ public class GameLauncher {
             }
 
             // Add Main Class
-            command.add(version.mainClass);
+            command.add(version.getMainClass());
 
             // Game Arguments
-            if (version.arguments.game != null) {
-                for (Object arg : version.arguments.game) {
+            if (version.getArguments().getGame() != null) {
+                for (Object arg : version.getArguments().getGame()) {
                     processArgument(command, arg, variables);
                 }
             }
@@ -102,11 +105,11 @@ public class GameLauncher {
             command.add("-cp");
             command.add(variables.get("classpath"));
 
-            command.add(version.mainClass);
+            command.add(version.getMainClass());
 
             // Parse minecraftArguments string
-            if (version.minecraftArguments != null) {
-                String[] args = version.minecraftArguments.split(" ");
+            if (version.getMinecraftArguments() != null) {
+                String[] args = version.getMinecraftArguments().split(" ");
                 for (String arg : args) {
                     command.add(replaceVariables(arg, variables));
                 }
@@ -127,9 +130,24 @@ public class GameLauncher {
         if (arg instanceof String) {
             command.add(replaceVariables((String) arg, variables));
         } else if (arg instanceof LinkedTreeMap) {
-            // It's a ruled argument
             // { "rules": [...], "value": ["--foo", "bar"] } or "value": "--foo"
             LinkedTreeMap<?, ?> map = (LinkedTreeMap<?, ?>) arg;
+
+            // To check rules here, we would need to deserialize them to Library.Rule
+            // objects
+            // However, arguments in 'arguments' field are generic objects.
+            // For now, implementing basic rule check locally for arguments
+            // or we could map map.get("rules") -> List<Rule>
+
+            // Note: Since 'arguments' in Version is now List<Object>, this remains tricky.
+            // But previous code called local checkRules(map.get("rules"))
+            // I will keep a simplified local checkRules for arguments OR adapt it.
+            // The user wants patterns. Duplicate logic is bad.
+            // But converting LinkedTreeMap to List<Rule> is annoying without Gson here.
+
+            // Let's use the helper we are about to inject, or honestly,
+            // KEEP checkRules BUT only for Arguments if strictly necessary?
+            // Actually, I can construct a temporary Library or Rule object.
 
             if (checkRules(map.get("rules"))) {
                 Object value = map.get("value");
@@ -216,20 +234,25 @@ public class GameLauncher {
         java.util.Set<String> addedArtifacts = new java.util.HashSet<>();
 
         // Add libraries
-        if (version.libraries != null) {
-            for (Library lib : version.libraries) {
+        if (version.getLibraries() != null) {
+            for (Library lib : version.getLibraries()) {
                 // Strict filter for 1.21+ log4j-slf4j-impl conflict
                 // Version ID for NeoForge 1.21 is "neoforge-21.x.x", vanilla is "1.21.x"
-                boolean isModern = version.id.contains("1.21") || version.id.contains("neoforge-21");
+                boolean isModern = version.getId().contains("1.21") || version.getId().contains("neoforge-21");
 
-                if (isModern && lib.name != null && lib.name.contains(":log4j-slf4j-impl:")) {
-                    System.out.println("Skipping conflicting library: " + lib.name + " for version " + version.id);
+                if (isModern && lib.getName() != null && lib.getName().contains(":log4j-slf4j-impl:")) {
+                    System.out.println(
+                            "Skipping conflicting library: " + lib.getName() + " for version " + version.getId());
                     continue;
                 }
 
                 // Deduplication by Artifact ID (keep first/newest)
-                if (lib.name != null) {
-                    String[] parts = lib.name.split(":");
+                if (lib.getName() != null) {
+                    if (!lib.appliesTo(this.osName, this.osArch)) {
+                        continue;
+                    }
+
+                    String[] parts = lib.getName().split(":");
                     if (parts.length >= 2) {
                         String key = parts[0] + ":" + parts[1];
                         // Important: Include classifier in key (e.g. natives) to avoid filtering
@@ -249,12 +272,12 @@ public class GameLauncher {
                 File libFile = null;
 
                 // Vanilla (downloads)
-                if (lib.downloads != null && lib.downloads.artifact != null) {
-                    libFile = new File(workDir, "libraries/" + lib.downloads.artifact.path);
+                if (lib.getDownloads() != null && lib.getDownloads().getArtifact() != null) {
+                    libFile = new File(workDir, "libraries/" + lib.getDownloads().getArtifact().getPath());
                 }
                 // Fabric/Forge/NeoForge (Maven)
-                else if (lib.name != null) {
-                    String[] parts = lib.name.split(":");
+                else if (lib.getName() != null) {
+                    String[] parts = lib.getName().split(":");
                     String group = parts[0].replace('.', '/');
                     String artifact = parts[1];
                     String libVersion = parts[2];
@@ -277,8 +300,8 @@ public class GameLauncher {
         // Add game JAR
         // For NeoForge, the game data is provided by the libraries (client-srg, etc).
         // Adding the vanilla JAR causes a module conflict (_1._20._4 vs minecraft).
-        if (!version.id.toLowerCase().contains("neoforge") && !version.id.toLowerCase().contains("forge")) {
-            String jarId = version.inheritsFrom != null ? version.inheritsFrom : version.id;
+        if (!version.getId().toLowerCase().contains("neoforge") && !version.getId().toLowerCase().contains("forge")) {
+            String jarId = version.getInheritsFrom() != null ? version.getInheritsFrom() : version.getId();
             File clientJar = new File(workDir, "versions/" + jarId + "/" + jarId + ".jar");
             String clientPath = clientJar.getAbsolutePath();
             if (addedPaths.add(clientPath)) {

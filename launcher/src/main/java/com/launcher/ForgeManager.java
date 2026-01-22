@@ -7,7 +7,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-public class ForgeManager {
+import com.launcher.service.VersionInstaller;
+
+public class ForgeManager implements VersionInstaller {
     private final File versionsDir;
     private final File librariesDir;
 
@@ -16,7 +18,8 @@ public class ForgeManager {
         this.librariesDir = new File(workDir, "libraries");
     }
 
-    public String installForge(String gameVersion, String forgeVersion) throws IOException {
+    @Override
+    public String install(String gameVersion, String forgeVersion) throws IOException {
         String fullVersion = gameVersion + "-" + forgeVersion;
         // Standard Forge version ID format: 1.20.1-forge-47.2.0
         String versionId = gameVersion + "-forge-" + forgeVersion;

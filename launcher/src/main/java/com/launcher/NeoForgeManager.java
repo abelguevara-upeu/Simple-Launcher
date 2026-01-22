@@ -7,7 +7,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-public class NeoForgeManager {
+import com.launcher.service.VersionInstaller;
+
+public class NeoForgeManager implements VersionInstaller {
     private final File versionsDir;
     private final File librariesDir;
 
@@ -16,7 +18,8 @@ public class NeoForgeManager {
         this.librariesDir = new File(workDir, "libraries");
     }
 
-    public String installNeoForge(String gameVersion, String neoforgeVersion) throws IOException {
+    @Override
+    public String install(String gameVersion, String neoforgeVersion) throws IOException {
         String versionId = "neoforge-" + neoforgeVersion;
         File neoforgeVersionDir = new File(versionsDir, versionId);
         File neoforgeJson = new File(neoforgeVersionDir, versionId + ".json");

@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Scanner;
 
 import com.google.gson.Gson;
+import com.launcher.model.Version;
+import com.launcher.model.Library;
 
 public class VersionManager {
     private final File versionsDir;
@@ -30,18 +32,20 @@ public class VersionManager {
 
         try (FileReader reader = new FileReader(jsonFile)) {
             Version version = gson.fromJson(reader, Version.class);
-            version.id = versionId;
+            version.setId(versionId);
 
-            if (version.inheritsFrom != null && !version.inheritsFrom.isEmpty()) {
-                System.out.println("Inheriting from " + versionId + " -> " + version.inheritsFrom);
+            if (version.getInheritsFrom() != null && !version.getInheritsFrom().isEmpty()) {
+                System.out.println("Inheriting from " + versionId + " -> " + version.getInheritsFrom());
 
-                File parentFile = new File(versionsDir, version.inheritsFrom + "/" + version.inheritsFrom + ".json");
+                File parentFile = new File(versionsDir,
+                        version.getInheritsFrom() + "/" + version.getInheritsFrom() + ".json");
                 if (!parentFile.exists()) {
-                    System.out.println("Parent version " + version.inheritsFrom + " not found locally. Downloading...");
-                    downloadVersionIndex(version.inheritsFrom);
+                    System.out.println(
+                            "Parent version " + version.getInheritsFrom() + " not found locally. Downloading...");
+                    downloadVersionIndex(version.getInheritsFrom());
                 }
 
-                Version parent = loadVersion(version.inheritsFrom);
+                Version parent = loadVersion(version.getInheritsFrom());
                 mergeVersions(version, parent);
             }
 
@@ -51,38 +55,38 @@ public class VersionManager {
 
     private void mergeVersions(Version child, Version parent) {
         // Merge libraries
-        if (parent.libraries != null) {
-            if (child.libraries == null) {
-                child.libraries = parent.libraries;
+        if (parent.getLibraries() != null) {
+            if (child.getLibraries() == null) {
+                child.setLibraries(parent.getLibraries());
             } else {
-                child.libraries.addAll(parent.libraries);
+                child.getLibraries().addAll(parent.getLibraries());
             }
 
             // Merge basic arguments
-            if (child.mainClass == null)
-                child.mainClass = parent.mainClass;
-            if (child.minecraftArguments == null)
-                child.minecraftArguments = parent.minecraftArguments;
+            if (child.getMainClass() == null)
+                child.setMainClass(parent.getMainClass());
+            if (child.getMinecraftArguments() == null)
+                child.setMinecraftArguments(parent.getMinecraftArguments());
             // If child has not asset index, inherit assets
-            if (child.assetIndex == null)
-                child.assetIndex = parent.assetIndex;
+            if (child.getAssetIndex() == null)
+                child.setAssetIndex(parent.getAssetIndex());
         }
 
         // Merge modern arguments (game/jvm)
-        if (parent.arguments != null) {
-            if (child.arguments == null) {
-                child.arguments = new Version.Arguments();
+        if (parent.getArguments() != null) {
+            if (child.getArguments() == null) {
+                child.setArguments(new Version.Arguments());
             }
-            if (child.arguments.game == null) {
-                child.arguments.game = parent.arguments.game;
-            } else if (parent.arguments.game != null) {
-                child.arguments.game.addAll(parent.arguments.game);
+            if (child.getArguments().getGame() == null) {
+                child.getArguments().setGame(parent.getArguments().getGame());
+            } else if (parent.getArguments().getGame() != null) {
+                child.getArguments().getGame().addAll(parent.getArguments().getGame());
             }
 
-            if (child.arguments.jvm == null) {
-                child.arguments.jvm = parent.arguments.jvm;
-            } else if (parent.arguments.jvm != null) {
-                child.arguments.jvm.addAll(parent.arguments.jvm);
+            if (child.getArguments().getJvm() == null) {
+                child.getArguments().setJvm(parent.getArguments().getJvm());
+            } else if (parent.getArguments().getJvm() != null) {
+                child.getArguments().getJvm().addAll(parent.getArguments().getJvm());
             }
         }
     }
@@ -140,14 +144,14 @@ public class VersionManager {
     }
 
     public void downloadGameJar(Version version) throws IOException {
-        if (version.downloads == null || version.downloads.client == null)
+        if (version.getDownloads() == null || version.getDownloads().getClient() == null)
             return;
 
-        File jarFile = new File(versionsDir, version.id + "/" + version.id + ".jar");
+        File jarFile = new File(versionsDir, version.getId() + "/" + version.getId() + ".jar");
 
         if (!jarFile.exists()) {
-            System.out.println("Descargando JAR para " + version.id);
-            downloadFile(version.downloads.client.url, jarFile);
+            System.out.println("Descargando JAR para " + version.getId());
+            downloadFile(version.getDownloads().getClient().getUrl(), jarFile);
         }
     }
 }

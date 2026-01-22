@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.gson.Gson;
+import com.launcher.model.Version;
 
 public class AssetManager {
     private final File assetsDir;
@@ -23,17 +24,17 @@ public class AssetManager {
     }
 
     public void downloadAssets(Version version) throws IOException {
-        if (version.assetIndex == null)
+        if (version.getAssetIndex() == null)
             return;
 
-        System.out.println("Downloading assets for " + version.assetIndex.id);
+        System.out.println("Downloading assets for " + version.getAssetIndex().getId());
 
         // Download asset index
-        File indexFile = new File(assetsDir, "indexes/" + version.assetIndex.id + ".json");
+        File indexFile = new File(assetsDir, "indexes/" + version.getAssetIndex().getId() + ".json");
         indexFile.getParentFile().mkdirs();
 
         if (!indexFile.exists()) {
-            downloadFile(version.assetIndex.url, indexFile);
+            downloadFile(version.getAssetIndex().getUrl(), indexFile);
         }
 
         // Read asset index

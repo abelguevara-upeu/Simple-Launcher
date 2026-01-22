@@ -2,6 +2,9 @@ package com.launcher.fx;
 
 import com.launcher.*;
 import com.launcher.auth.OfflineAuthenticator;
+import com.launcher.model.Version;
+import com.launcher.service.VersionInstaller;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -214,33 +217,34 @@ public class MainController {
         String versionId = "";
 
         if (type.equals("NeoForge")) {
-            NeoForgeManager neoMgr = new NeoForgeManager(workDir);
+            VersionInstaller installer = new NeoForgeManager(workDir);
             // Parse "1.21.1 - 21.1.200"
             String[] parts = versionRaw.split(" - ");
-            versionId = neoMgr.installNeoForge(parts[0], parts[1]);
+            versionId = installer.install(parts[0], parts[1]);
         } else if (type.equals("Fabric")) {
-            FabricManager fabricMgr = new FabricManager(workDir);
+            VersionInstaller installer = new FabricManager(workDir);
             String[] parts = versionRaw.split(" - ");
-            versionId = fabricMgr.installFabric(parts[0], parts[1]);
+            versionId = installer.install(parts[0], parts[1]);
         } else if (type.equals("Forge")) {
-            ForgeManager forgeMgr = new ForgeManager(workDir);
+            VersionInstaller installer = new ForgeManager(workDir);
             String[] parts = versionRaw.split(" - ");
-            versionId = forgeMgr.installForge(parts[0], parts[1]);
+            versionId = installer.install(parts[0], parts[1]);
         } else {
             // Vanilla
+            VersionInstaller installer = new VanillaInstaller(workDir);
             versionId = versionRaw.split(" ")[0]; // Just the number
-            manager.downloadVersionIndex(versionId);
+            installer.install(versionId, null); // Vanilla ignores loader version
         }
 
         updateMessage("Loading Version...");
         Version version = manager.loadVersion(versionId);
 
         updateMessage("Downloading Assets...");
-        if (version.assetIndex != null)
+        if (version.getAssetIndex() != null)
             assetManager.downloadAssets(version);
 
         updateMessage("Downloading Libraries...");
-        if (version.libraries != null) {
+        if (version.getLibraries() != null) {
             com.launcher.LibraryManager libMgr = new com.launcher.LibraryManager(workDir);
             libMgr.downloadLibraries(version);
         }

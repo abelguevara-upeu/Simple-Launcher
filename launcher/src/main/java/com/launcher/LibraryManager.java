@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import com.launcher.model.Library;
+import com.launcher.model.Version;
 
 public class LibraryManager {
     private final File librariesDir;
@@ -28,16 +30,16 @@ public class LibraryManager {
         System.out.println("Verified libraries for " + this.osName + "...");
         int count = 0;
 
-        if (version.libraries == null)
+        if (version.getLibraries() == null)
             return;
 
-        for (Library lib : version.libraries) {
+        for (Library lib : version.getLibraries()) {
             if (shouldDownload(lib)) {
                 try {
                     downloadLibrary(lib);
                     count++;
                 } catch (IOException e) {
-                    System.err.println("Error downloading library: " + lib.name);
+                    System.err.println("Error downloading library: " + lib.getName());
                     e.printStackTrace();
                 }
             }
@@ -46,19 +48,8 @@ public class LibraryManager {
     }
 
     private boolean shouldDownload(Library lib) {
-        if (lib.rules == null)
-            return true; // If no rules, download always
-
-        boolean allow = false;
-        for (Library.Rule rule : lib.rules) {
-            if (rule.os == null) {
-                allow = rule.action.equals("allow");
-
-            } else if (rule.os.name.equals(this.osName)) {
-                allow = rule.action.equals("allow");
-            }
-        }
-        return allow;
+        // Use the model's logic
+        return lib.appliesTo(this.osName, System.getProperty("os.arch"));
     }
 
     private void downloadLibrary(Library lib) throws IOException {
@@ -66,13 +57,13 @@ public class LibraryManager {
         String url = null;
 
         // Vanilla Libraries
-        if (lib.downloads != null && lib.downloads.artifact != null) {
-            libFile = new File(librariesDir, lib.downloads.artifact.path);
-            url = lib.downloads.artifact.url;
+        if (lib.getDownloads() != null && lib.getDownloads().getArtifact() != null) {
+            libFile = new File(librariesDir, lib.getDownloads().getArtifact().getPath());
+            url = lib.getDownloads().getArtifact().getUrl();
         }
         // Fabric/Forge Libraries (Maven Central)
-        else if (lib.name != null) {
-            String[] parts = lib.name.split(":");
+        else if (lib.getName() != null) {
+            String[] parts = lib.getName().split(":");
             String group = parts[0].replace('.', '/');
             String artifact = parts[1];
             String version = parts[2];
@@ -81,12 +72,12 @@ public class LibraryManager {
             libFile = new File(librariesDir, path);
 
             // If JSON has a custom URL, use it, otherwise use Maven Central
-            String baseUrl = (lib.url != null) ? lib.url : "https://repo1.maven.org/maven2/";
+            String baseUrl = (lib.getUrl() != null) ? lib.getUrl() : "https://repo1.maven.org/maven2/";
             url = baseUrl + path;
         }
 
         if (libFile != null && !libFile.exists()) {
-            System.out.println("Downloading library: " + lib.name);
+            System.out.println("Downloading library: " + lib.getName());
             libFile.getParentFile().mkdirs();
 
             try (InputStream in = new URL(url).openStream()) {

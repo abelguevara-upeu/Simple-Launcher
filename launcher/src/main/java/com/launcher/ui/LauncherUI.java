@@ -6,9 +6,11 @@ import com.launcher.FabricManager;
 import com.launcher.ForgeManager;
 import com.launcher.GameLauncher;
 import com.launcher.NeoForgeManager;
-import com.launcher.Version;
+import com.launcher.model.Version;
 import com.launcher.VersionManager;
 import com.launcher.auth.OfflineAuthenticator;
+import com.launcher.service.VersionInstaller;
+import com.launcher.VanillaInstaller;
 
 import javax.swing.*;
 import java.awt.*;
@@ -180,22 +182,20 @@ public class LauncherUI extends JFrame {
         String versionId = "";
 
         if (selection.contains("NeoForge")) {
-            NeoForgeManager neoforgeMgr = new NeoForgeManager(workDir);
-            // 21.1.200 for Create Mod
-            versionId = neoforgeMgr.installNeoForge("1.21.1", "21.1.200");
+            VersionInstaller installer = new NeoForgeManager(workDir);
+            versionId = installer.install("1.21.1", "21.1.200");
         } else if (selection.contains("Fabric")) {
-            FabricManager fabricMgr = new FabricManager(workDir);
-            // Use stable recent loader for 1.21.1
-            versionId = fabricMgr.installFabric("1.21.1", "0.16.5");
+            VersionInstaller installer = new FabricManager(workDir);
+            versionId = installer.install("1.21.1", "0.16.5");
         } else if (selection.contains("Forge")) {
-            ForgeManager forgeMgr = new ForgeManager(workDir);
-            versionId = forgeMgr.installForge("1.20.1", "47.2.0");
+            VersionInstaller installer = new ForgeManager(workDir);
+            versionId = installer.install("1.20.1", "47.2.0");
         } else if (selection.contains("1.21.1")) {
-            versionId = "1.21.1";
-            manager.downloadVersionIndex(versionId);
+            VersionInstaller installer = new VanillaInstaller(workDir);
+            versionId = installer.install("1.21.1", null);
         } else if (selection.contains("1.20.4")) {
-            versionId = "1.20.4";
-            manager.downloadVersionIndex(versionId);
+            VersionInstaller installer = new VanillaInstaller(workDir);
+            versionId = installer.install("1.20.4", null);
         }
 
         System.out.println("Loading version: " + versionId);
@@ -204,12 +204,12 @@ public class LauncherUI extends JFrame {
         // Merging is handled automatically by VersionManager.loadVersion()
 
         System.out.println("Downloading assets...");
-        if (version.assetIndex != null) {
+        if (version.getAssetIndex() != null) {
             assetManager.downloadAssets(version);
         }
 
         System.out.println("Downloading libraries...");
-        if (version.libraries != null) {
+        if (version.getLibraries() != null) {
             com.launcher.LibraryManager libMgr = new com.launcher.LibraryManager(workDir);
             libMgr.downloadLibraries(version);
         }
